@@ -36,7 +36,8 @@ export const useAddAgent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['agents']);
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['beaches'] });
     },
   });
 };
@@ -50,10 +51,10 @@ export const useEditAgent = () => {
       const { data } = await API.put(`/agents/${id}`, updatedData);
       return data;
     },
-    onSuccess: (response) => {
-      const updatedAgent = response.data?.agent || response.data;
-      queryClient.invalidateQueries(['agents']);
-      queryClient.invalidateQueries(['agent']);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent'] });
+      queryClient.invalidateQueries({ queryKey: ['beaches'] });
     },
   });
 };
@@ -68,7 +69,8 @@ export const useDeleteAgent = () => {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['agents']);
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['beaches'] });
     },
   });
 };
@@ -85,9 +87,9 @@ export const useReassignAgent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['agents']);
-      queryClient.invalidateQueries(['agent']);
-      queryClient.invalidateQueries(['beaches']);
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent'] });
+      queryClient.invalidateQueries({ queryKey: ['beaches'] });
     },
   });
 };
@@ -115,21 +117,36 @@ export const useUpdateAgentStatus = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['agents']);
-      queryClient.invalidateQueries(['agent']);
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent'] });
+      queryClient.invalidateQueries({ queryKey: ['beaches'] });
     },
   });
 };
 
 /* GET EVENTS BY AGENT ID */
-export const useEventsByAgent = (agentId) => {
+export const useEventsByAgent = (agentId, params = {}) => {
   return useQuery({
-    queryKey: ['events', 'agent', agentId],
+    queryKey: ['events', 'agent', agentId, params],
     queryFn: async () => {
-      const { data } = await API.get(`/events/agent/${agentId}`);
+      const { data } = await API.get(`/events/agent/${agentId}`, { params });
       return data;
     },
     enabled: !!agentId,
     staleTime: 1000 * 60 * 5,
+  });
+};
+
+/* GET AGENT WASTE SUBMISSIONS */
+export const useMyWasteSubmissions = (params = {}) => {
+  return useQuery({
+    queryKey: ['waste-submissions', params],
+    queryFn: async () => {
+      const { data } = await API.get('/waste-records/portal/submissions', {
+        params,
+      });
+      return data;
+    },
+    staleTime: 1000 * 60,
   });
 };

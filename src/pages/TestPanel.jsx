@@ -21,6 +21,10 @@ import {
   createComment,
 } from '@/services/api';
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+const API_DOCS_URL = `${API_BASE_URL.replace(/\/api\/?$/, '')}/api-docs`;
+
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
 const cls = (...args) => args.filter(Boolean).join(' ');
@@ -1026,7 +1030,7 @@ export default function TestPanel() {
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs text-slateald-400 text-slate-400">
-                localhost:4000
+                {API_BASE_URL.replace(/^https?:\/\//, '')}
               </span>
             </div>
           </div>
@@ -1079,12 +1083,12 @@ export default function TestPanel() {
         <div className="mt-10 text-center text-xs text-slate-700">
           EcoShore API Test Panel · Backend at{' '}
           <a
-            href="http://localhost:4000/api-docs"
+            href={API_DOCS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-teal-700 hover:text-teal-500"
           >
-            localhost:4000/api-docs
+            {API_DOCS_URL.replace(/^https?:\/\//, '')}
           </a>
         </div>
       </div>

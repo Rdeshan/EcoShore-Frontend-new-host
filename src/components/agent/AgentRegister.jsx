@@ -6,6 +6,7 @@ import { createAgent } from '@/api/agentApi.js';
 import { useBeaches } from '@/hooks/beaches.js';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const initialFormData = {
   name: '',
@@ -15,6 +16,7 @@ const initialFormData = {
 };
 
 export default function AgentRegister() {
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState(initialFormData);
   const [isPending, setIsPending] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -67,12 +69,18 @@ export default function AgentRegister() {
     setIsPending(true);
 
     try {
-      const response = await createAgent({
+      await createAgent({
         name: formData.name,
         email: formData.email,
         nic: formData.nic,
         assignedBeach: formData.assignedBeach,
       });
+
+      // Ensure newly created agents appear immediately in event assignment lists.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['agents'] }),
+        queryClient.invalidateQueries({ queryKey: ['beaches'] }),
+      ]);
 
       setIsSuccess(true);
       setFormData(initialFormData);

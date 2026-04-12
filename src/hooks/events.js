@@ -23,7 +23,8 @@ export const useAddEvent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };
@@ -38,7 +39,8 @@ export const useEditEvent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };
@@ -53,7 +55,8 @@ export const useDeleteEvent = () => {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };
@@ -68,7 +71,8 @@ export const useJoinEvent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };
@@ -83,7 +87,8 @@ export const useLeaveEvent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };
@@ -100,7 +105,8 @@ export const useAssignAgent = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'agent'] });
     },
   });
 };

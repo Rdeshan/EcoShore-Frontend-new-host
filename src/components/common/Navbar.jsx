@@ -144,7 +144,10 @@ export default function Navbar() {
       {/* RIGHT — Auth */}
       <div className="flex items-center gap-3">
         {role === 'admin' && (
-          <div className="me-3">
+          <div className="me-3 flex items-center gap-4">
+            <NavLink to="/waste-records-list" className={navLinkClass}>
+              Waste Records
+            </NavLink>
             <NavLink to="/usermanagement" className={navLinkClass}>
               Users
             </NavLink>

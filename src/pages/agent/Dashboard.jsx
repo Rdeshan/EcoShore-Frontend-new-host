@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, TrendingUp, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -10,12 +10,28 @@ import {
 import AgentEvents from '@/components/agent/AgentEvents';
 import ManageUsers from '@/components/agent/ManageUsers';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useEventsByAgent, useMyWasteSubmissions } from '@/hooks/agent';
 
 export default function AgentDashboard() {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const agentId = user?._id;
+  const agentId = user?._id || user?.id;
   const [activeTab, setActiveTab] = useState('events');
   const isAdmin = user?.role === 'admin';
+  const { data: upcomingEventsData } = useEventsByAgent(agentId, {
+    page: 1,
+    limit: 1,
+    status: 'UPCOMING',
+  });
+  const { data: wasteSubmissionsData } = useMyWasteSubmissions({
+    page: 1,
+    limit: 10,
+  });
+
+  const upcomingEventsCount = upcomingEventsData?.data?.pagination?.total || 0;
+  const wasteSubmissions = wasteSubmissionsData?.data || [];
 
   const tabs = [
     { id: 'events', label: 'Events', icon: Calendar },
@@ -23,19 +39,27 @@ export default function AgentDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-12">
+    <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
+      <div className="container mx-auto">
         {/* Header */}
         <div className="mb-10">
-          <div>
+          <div className="flex items-start gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="mt-1"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Calendar className="w-8 h-8 text-primary" />
               Agent Dashboard
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your assigned events and track progress
-            </p>
           </div>
+          <p className="text-muted-foreground mt-2">
+            Manage your assigned events and track progress
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -46,7 +70,7 @@ export default function AgentDashboard() {
                 Upcoming Events
                 <Calendar className="w-4 h-4" />
               </CardTitle>
-              <div className="text-4xl font-bold mt-2">0</div>
+              <div className="text-4xl font-bold mt-2">{upcomingEventsCount}</div>
             </CardHeader>
           </Card>
 
@@ -67,7 +91,7 @@ export default function AgentDashboard() {
                 <MapPin className="w-4 h-4" />
               </CardTitle>
               <div className="text-xl font-bold mt-2 truncate">
-                {user?.assignedBeach?.name || 'Not Assigned'}
+                {user?.assignedBeach?.name || user?.assignedBeach || 'Not Assigned'}
               </div>
             </CardHeader>
           </Card>
@@ -132,6 +156,59 @@ export default function AgentDashboard() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border-border">
+              <CardHeader>
+                <CardTitle>Submitted Waste Records</CardTitle>
+                <CardDescription>
+                  Recent submissions from your assigned events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {wasteSubmissions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No waste records submitted yet.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full min-w-160 text-sm">
+                      <thead className="bg-muted/40">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-muted-foreground">
+                            Submit Date
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold text-muted-foreground">
+                            Related Event
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold text-muted-foreground">
+                            Submit By
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {wasteSubmissions.map((record) => (
+                          <tr key={record.id} className="border-t border-border">
+                            <td className="px-4 py-3">
+                              {new Date(
+                                record.createdAt || record.collectionDate
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              {record.event?.title || 'No event linked'}
+                            </td>
+                            <td className="px-4 py-3">
+                              {record.submittedBy?.name ||
+                                record.submittedBy?.email ||
+                                'Unknown'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

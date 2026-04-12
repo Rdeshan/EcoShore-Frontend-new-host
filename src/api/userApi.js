@@ -2,7 +2,7 @@ import API from '@/api/index.js';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = 'http://localhost:4001/api';
 
 const getAuthHeaders = () => {
   const token = Cookies.get('token') || localStorage.getItem('token');

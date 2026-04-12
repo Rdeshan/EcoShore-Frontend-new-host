@@ -23,6 +23,10 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
+  useQueryClient,
+} from '@tanstack/react-query';
+
+import {
   activateUser,
   deactivateUser,
   deleteUser,
@@ -93,6 +97,7 @@ const getRoleMetaByRole = (role) => {
 };
 
 export default function ManageUsers() {
+  const queryClient = useQueryClient();
   const { user: currentUser } = useSelector((state) => state.auth);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -198,6 +203,26 @@ export default function ManageUsers() {
             item._id === userId ? { ...item, isDeleted: true } : item
           )
         );
+
+        // Optimistically remove deleted users from cached agent lists used by event assignment.
+        queryClient.setQueryData(['agents'], (previousData) => {
+          if (!previousData?.data?.agents) {
+            return previousData;
+          }
+
+          return {
+            ...previousData,
+            data: {
+              ...previousData.data,
+              agents: previousData.data.agents.filter(
+                (agent) => agent.id !== userId && agent._id !== userId
+              ),
+            },
+          };
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['agents'] });
+        queryClient.invalidateQueries({ queryKey: ['beaches'] });
       } else {
         alert('Failed to delete user');
       }

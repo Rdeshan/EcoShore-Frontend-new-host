@@ -20,6 +20,7 @@ import CollectorDashboard from '@/pages/collector/Dashboard';
 import AgentDashboard from '@/pages/agent/Dashboard';
 import UserManagement from '@/pages/UserManagement';
 import AnalyticsDashboard from '@/pages/AnalyticsDashboard';
+import WasteRecordsList from '@/pages/WasteRecordsList';
 import AgentRegister from '@/components/agent/AgentRegister';
 import ProfilePage from '@/pages/Profile';
 import GlobalChatWidget from '@/components/chat/GlobalChatWidget';
@@ -41,6 +42,7 @@ function App() {
             {/* Admin only - Register new agent */}
             <Route element={<PrivateRoute allowedRoles={['admin']} />}>
               <Route path="/agent-form" element={<AgentRegister />} />
+              <Route path="/waste-records-list" element={<WasteRecordsList />} />
             </Route>
 
             {/* Protected routes under Layout for all authenticated roles */}
