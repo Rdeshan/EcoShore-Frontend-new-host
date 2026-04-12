@@ -32,11 +32,17 @@ export const useWeatherByCity = (cityName) => {
   return useQuery({
     queryKey: ['weather', 'city', cityName],
     queryFn: async () => {
+      console.log('🔄 Weather hook fetching for:', cityName);
       const data = await getWeatherByCity(cityName);
-      return formatWeatherData(data);
+      const formatted = formatWeatherData(data);
+      console.log('📊 Weather hook formatted data:', formatted);
+      return formatted;
     },
     enabled: !!cityName,
     staleTime: 1000 * 60 * 30, // Cache for 30 minutes
-    retry: 1,
+    retry: 2,
+    onError: (error) => {
+      console.error('⚠️ Weather query error:', error);
+    },
   });
 };

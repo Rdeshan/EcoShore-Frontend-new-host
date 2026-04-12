@@ -341,7 +341,18 @@ export default function AgentEvents({ agentId }) {
 
   // Event Card Component with Weather
   const EventCard = ({ event, beachName, onRecordWaste, getWasteRecordsForEvent, canSubmitWaste }) => {
-    const { data: weatherData, isLoading: isWeatherLoading } = useWeatherByCity(beachName);
+    const { data: weatherData, isLoading: isWeatherLoading, error: weatherError } = useWeatherByCity(beachName);
+    
+    // Debug logging
+    React.useEffect(() => {
+      console.log('🏖️ EventCard rendered with:', {
+        eventTitle: event.title,
+        beachName,
+        beachId: event.beachId,
+        weatherData,
+        weatherError: weatherError?.message,
+      });
+    }, [beachName, weatherData, weatherError, event]);
 
     const getWeatherIcon = () => {
       if (!weatherData?.condition) return null;
@@ -457,8 +468,16 @@ export default function AgentEvents({ agentId }) {
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-lg bg-slate-50/50 border border-slate-200/50">
-                <p className="text-xs text-muted-foreground">Weather unavailable</p>
+              <div className="p-3 rounded-lg bg-red-50/50 border border-red-200/50 space-y-1">
+                <p className="text-xs font-semibold text-red-700">Weather Error</p>
+                <p className="text-xs text-red-600">
+                  Could not fetch weather for: <span className="font-mono">{beachName}</span>
+                </p>
+                {weatherError && (
+                  <p className="text-xs text-red-500">
+                    {weatherError.message || weatherError}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -567,7 +586,18 @@ export default function AgentEvents({ agentId }) {
 
       <div className="grid gap-4">
         {events.map((event) => {
-          const beachName = event.beachId?.name || 'Beach';
+          // Improved beach name extraction
+          let beachName = '';
+          if (event.beachId?.name) {
+            beachName = event.beachId.name;
+          } else if (typeof event.beachId === 'string') {
+            beachName = event.beachId;
+          } else {
+            beachName = 'Beach';
+          }
+          
+          console.log('📍 Extracted beach name for event:', event.title, '-> beachName:', beachName, 'beachId:', event.beachId);
+          
           return (
             <EventCard
               key={event._id}
