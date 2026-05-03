@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, ChevronRight } from 'lucide-react';
 import {
-  CheckCircle2,
-  ChevronRight,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -51,7 +54,9 @@ export default function WasteRecordsList() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading records...</p>
           ) : records.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No waste records found.</p>
+            <p className="text-sm text-muted-foreground">
+              No waste records found.
+            </p>
           ) : (
             <>
               <div className="overflow-x-auto rounded-xl border border-border">
@@ -103,7 +108,9 @@ export default function WasteRecordsList() {
                   size="sm"
                   variant="outline"
                   disabled={pagination.page <= 1}
-                  onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+                  onClick={() =>
+                    setPage((previous) => Math.max(1, previous - 1))
+                  }
                 >
                   Previous
                 </Button>
@@ -115,7 +122,9 @@ export default function WasteRecordsList() {
                   variant="outline"
                   disabled={pagination.page >= pagination.pages}
                   onClick={() =>
-                    setPage((previous) => Math.min(pagination.pages, previous + 1))
+                    setPage((previous) =>
+                      Math.min(pagination.pages, previous + 1)
+                    )
                   }
                 >
                   Next
@@ -134,7 +143,10 @@ export default function WasteRecordsList() {
               <SheetHeader>
                 <SheetTitle>Waste Record Details</SheetTitle>
                 <SheetDescription>
-                  ID: {selectedRecord._id?.slice(-8) || selectedRecord.id?.slice(-8) || 'N/A'}
+                  ID:{' '}
+                  {selectedRecord._id?.slice(-8) ||
+                    selectedRecord.id?.slice(-8) ||
+                    'N/A'}
                 </SheetDescription>
               </SheetHeader>
 

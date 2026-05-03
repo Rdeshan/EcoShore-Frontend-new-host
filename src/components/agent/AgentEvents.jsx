@@ -100,7 +100,10 @@ export default function AgentEvents({ agentId }) {
   const canSubmitWaste = user?.role === 'agent';
 
   const { data, isLoading, error } = useEventsByAgent(agentId, { page, limit });
-  const { data: wasteSubmissionsData } = useMyWasteSubmissions({ page: 1, limit: 100 });
+  const { data: wasteSubmissionsData } = useMyWasteSubmissions({
+    page: 1,
+    limit: 100,
+  });
 
   const createWasteRecordMutation = useMutation({
     mutationFn: async (payload) => {
@@ -134,9 +137,7 @@ export default function AgentEvents({ agentId }) {
         submissionError?.message ||
         'Failed to submit waste record';
 
-      toast.error(
-        errorMessage
-      );
+      toast.error(errorMessage);
       setSubmissionFeedback({
         type: 'error',
         message: errorMessage,
@@ -202,7 +203,9 @@ export default function AgentEvents({ agentId }) {
       wasteForm.temperature === '' ? undefined : Number(wasteForm.temperature);
     if (
       parsedTemperature !== undefined &&
-      (Number.isNaN(parsedTemperature) || parsedTemperature < -20 || parsedTemperature > 70)
+      (Number.isNaN(parsedTemperature) ||
+        parsedTemperature < -20 ||
+        parsedTemperature > 70)
     ) {
       toast.error('Temperature should be between -20 and 70 C');
       return;
@@ -212,7 +215,9 @@ export default function AgentEvents({ agentId }) {
       wasteForm.windSpeed === '' ? undefined : Number(wasteForm.windSpeed);
     if (
       parsedWindSpeed !== undefined &&
-      (Number.isNaN(parsedWindSpeed) || parsedWindSpeed < 0 || parsedWindSpeed > 300)
+      (Number.isNaN(parsedWindSpeed) ||
+        parsedWindSpeed < 0 ||
+        parsedWindSpeed > 300)
     ) {
       toast.error('Wind speed should be between 0 and 300 km/h');
       return;
@@ -303,7 +308,10 @@ export default function AgentEvents({ agentId }) {
   // Get waste records for a specific event
   const getWasteRecordsForEvent = (eventId) => {
     const allWasteRecords = wasteSubmissionsData?.data || [];
-    return allWasteRecords.filter((record) => String(record.eventId?._id || record.eventId) === String(eventId));
+    return allWasteRecords.filter(
+      (record) =>
+        String(record.eventId?._id || record.eventId) === String(eventId)
+    );
   };
 
   if (events.length === 0) {
@@ -340,9 +348,19 @@ export default function AgentEvents({ agentId }) {
   };
 
   // Event Card Component with Weather
-  const EventCard = ({ event, beachName, onRecordWaste, getWasteRecordsForEvent, canSubmitWaste }) => {
-    const { data: weatherData, isLoading: isWeatherLoading, error: weatherError } = useWeatherByCity(beachName);
-    
+  const EventCard = ({
+    event,
+    beachName,
+    onRecordWaste,
+    getWasteRecordsForEvent,
+    canSubmitWaste,
+  }) => {
+    const {
+      data: weatherData,
+      isLoading: isWeatherLoading,
+      error: weatherError,
+    } = useWeatherByCity(beachName);
+
     // Debug logging
     React.useEffect(() => {
       console.log('🏖️ EventCard rendered with:', {
@@ -357,9 +375,12 @@ export default function AgentEvents({ agentId }) {
     const getWeatherIcon = () => {
       if (!weatherData?.condition) return null;
       const condition = weatherData.condition.toLowerCase();
-      if (condition.includes('rain')) return <CloudRain className="w-5 h-5 text-blue-500" />;
-      if (condition.includes('cloud')) return <Cloud className="w-5 h-5 text-gray-400" />;
-      if (condition.includes('clear') || condition.includes('sunny')) return <Sun className="w-5 h-5 text-yellow-400" />;
+      if (condition.includes('rain'))
+        return <CloudRain className="w-5 h-5 text-blue-500" />;
+      if (condition.includes('cloud'))
+        return <Cloud className="w-5 h-5 text-gray-400" />;
+      if (condition.includes('clear') || condition.includes('sunny'))
+        return <Sun className="w-5 h-5 text-yellow-400" />;
       return <Cloud className="w-5 h-5 text-gray-400" />;
     };
 
@@ -436,13 +457,17 @@ export default function AgentEvents({ agentId }) {
           <div className="mb-4 pb-4 border-b border-border">
             {isWeatherLoading ? (
               <div className="p-3 rounded-lg bg-slate-50/50 border border-slate-200/50">
-                <p className="text-xs text-muted-foreground">Loading weather...</p>
+                <p className="text-xs text-muted-foreground">
+                  Loading weather...
+                </p>
               </div>
             ) : weatherData ? (
               <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200/50 space-y-2">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">Current Weather</p>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">
+                      Current Weather
+                    </p>
                     <div className="flex items-center gap-2">
                       {getWeatherIcon()}
                       <div>
@@ -469,9 +494,12 @@ export default function AgentEvents({ agentId }) {
               </div>
             ) : (
               <div className="p-3 rounded-lg bg-red-50/50 border border-red-200/50 space-y-1">
-                <p className="text-xs font-semibold text-red-700">Weather Error</p>
+                <p className="text-xs font-semibold text-red-700">
+                  Weather Error
+                </p>
                 <p className="text-xs text-red-600">
-                  Could not fetch weather for: <span className="font-mono">{beachName}</span>
+                  Could not fetch weather for:{' '}
+                  <span className="font-mono">{beachName}</span>
                 </p>
                 {weatherError && (
                   <p className="text-xs text-red-500">
@@ -541,7 +569,10 @@ export default function AgentEvents({ agentId }) {
                             </span>
                           </div>
                           <p className="text-xs text-green-700 mt-1">
-                            {new Date(record.collectionDate).toLocaleDateString()} • {record.source}
+                            {new Date(
+                              record.collectionDate
+                            ).toLocaleDateString()}{' '}
+                            • {record.source}
                           </p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-green-600 group-hover:translate-x-1 transition-transform" />
@@ -595,9 +626,16 @@ export default function AgentEvents({ agentId }) {
           } else {
             beachName = 'Beach';
           }
-          
-          console.log('📍 Extracted beach name for event:', event.title, '-> beachName:', beachName, 'beachId:', event.beachId);
-          
+
+          console.log(
+            '📍 Extracted beach name for event:',
+            event.title,
+            '-> beachName:',
+            beachName,
+            'beachId:',
+            event.beachId
+          );
+
           return (
             <EventCard
               key={event._id}
@@ -660,11 +698,16 @@ export default function AgentEvents({ agentId }) {
           <SheetHeader>
             <SheetTitle>Submit Waste Record</SheetTitle>
             <SheetDescription>
-              Log collected waste for event "{selectedEvent?.title || 'Selected Event'}".
+              Log collected waste for event "
+              {selectedEvent?.title || 'Selected Event'}".
             </SheetDescription>
           </SheetHeader>
 
-          <form noValidate onSubmit={handleWasteSubmit} className="mt-6 space-y-4">
+          <form
+            noValidate
+            onSubmit={handleWasteSubmit}
+            className="mt-6 space-y-4"
+          >
             <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm">
               <p className="font-semibold text-foreground">
                 {selectedEvent?.title || 'Selected Event'}
@@ -757,7 +800,10 @@ export default function AgentEvents({ agentId }) {
                 <Select
                   value={wasteForm.weatherCondition}
                   onValueChange={(value) =>
-                    setWasteForm((prev) => ({ ...prev, weatherCondition: value }))
+                    setWasteForm((prev) => ({
+                      ...prev,
+                      weatherCondition: value,
+                    }))
                   }
                 >
                   <SelectTrigger id="weatherCondition">
@@ -881,7 +927,10 @@ export default function AgentEvents({ agentId }) {
       </Sheet>
 
       {/* Waste Record Detail Sheet */}
-      <Sheet open={isWasteDetailSheetOpen} onOpenChange={setIsWasteDetailSheetOpen}>
+      <Sheet
+        open={isWasteDetailSheetOpen}
+        onOpenChange={setIsWasteDetailSheetOpen}
+      >
         <SheetContent side="right" className="overflow-y-auto sm:max-w-md">
           {selectedWasteRecord && (
             <>
@@ -937,7 +986,9 @@ export default function AgentEvents({ agentId }) {
                   </Label>
                   <div className="p-3 rounded-lg bg-orange-50/50 border border-orange-200/50">
                     <span className="font-semibold text-orange-900">
-                      {new Date(selectedWasteRecord.collectionDate).toLocaleString()}
+                      {new Date(
+                        selectedWasteRecord.collectionDate
+                      ).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1059,4 +1110,3 @@ export default function AgentEvents({ agentId }) {
     </div>
   );
 }
-
