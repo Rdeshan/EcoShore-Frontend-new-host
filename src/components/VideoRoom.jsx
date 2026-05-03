@@ -6,9 +6,33 @@ import { Loader2, Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const rtcConfig = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+const buildRtcConfig = () => {
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
+  const turnUrls = (turnUrl || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (turnUrls.length > 0 && (!turnUsername || !turnCredential)) {
+    console.warn('[meeting] TURN URL provided without username/credential.');
+  }
+
+  const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+  if (turnUrls.length > 0 && turnUsername && turnCredential) {
+    iceServers.push({
+      urls: turnUrls.length === 1 ? turnUrls[0] : turnUrls,
+      username: turnUsername,
+      credential: turnCredential,
+    });
+  }
+
+  return { iceServers };
 };
+
+const rtcConfig = buildRtcConfig();
 
 const getSocketServerUrl = () => {
   const apiBaseUrl =

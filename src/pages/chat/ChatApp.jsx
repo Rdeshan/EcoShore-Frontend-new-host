@@ -25,8 +25,41 @@ import {
   removeMemberFromGroup,
 } from '@/api/chatApi';
 
-const rtcConfig = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+const buildRtcConfig = () => {
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
+  const turnUrls = (turnUrl || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (turnUrls.length > 0 && (!turnUsername || !turnCredential)) {
+    console.warn('[chat-call] TURN URL provided without username/credential.');
+  }
+
+  const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+  if (turnUrls.length > 0 && turnUsername && turnCredential) {
+    iceServers.push({
+      urls: turnUrls.length === 1 ? turnUrls[0] : turnUrls,
+      username: turnUsername,
+      credential: turnCredential,
+    });
+  }
+
+  return { iceServers };
+};
+
+const rtcConfig = buildRtcConfig();
+const shouldLogCalls =
+  import.meta.env.VITE_CALL_LOGS === 'true' || import.meta.env.DEV;
+const logCallEvent = (event, details = {}) => {
+  if (!shouldLogCalls) {
+    return;
+  }
+
+  console.info('[chat-call]', event, details);
 };
 
 const getSocketServerUrl = () => {
@@ -67,6 +100,7 @@ export default function ChatApp({
   const localAudioStreamRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const disconnectedTimerRef = useRef(null);
+  const connectingTimeoutRef = useRef(null);
   const pendingIceCandidatesRef = useRef([]);
   const activeCallStateRef = useRef(callState);
   const externalOnOpenRef = useRef(externalOnOpen);
@@ -175,6 +209,11 @@ export default function ChatApp({
       disconnectedTimerRef.current = null;
     }
 
+    if (connectingTimeoutRef.current) {
+      clearTimeout(connectingTimeoutRef.current);
+      connectingTimeoutRef.current = null;
+    }
+
     if (peerConnectionRef.current) {
       peerConnectionRef.current.onicecandidate = null;
       peerConnectionRef.current.ontrack = null;
@@ -258,6 +297,12 @@ export default function ChatApp({
           return;
         }
 
+        logCallEvent('ice-candidate:send', {
+          callId,
+          toUserId: String(remoteUserId),
+          candidateType: event.candidate.type,
+        });
+
         callSocketRef.current.emit('ice-candidate', {
           callId,
           toUserId: String(remoteUserId),
@@ -276,6 +321,11 @@ export default function ChatApp({
 
       peerConnection.onconnectionstatechange = () => {
         const connectionState = peerConnection.connectionState;
+
+        logCallEvent('connection-state', {
+          callId,
+          connectionState,
+        });
 
         if (connectionState === 'connected') {
           if (disconnectedTimerRef.current) {
@@ -329,6 +379,20 @@ export default function ChatApp({
 
           closeCallScreen();
         }
+      };
+
+      peerConnection.oniceconnectionstatechange = () => {
+        logCallEvent('ice-connection-state', {
+          callId,
+          iceConnectionState: peerConnection.iceConnectionState,
+        });
+      };
+
+      peerConnection.onsignalingstatechange = () => {
+        logCallEvent('signaling-state', {
+          callId,
+          signalingState: peerConnection.signalingState,
+        });
       };
 
       peerConnectionRef.current = peerConnection;
@@ -617,11 +681,49 @@ export default function ChatApp({
     });
     setCallDurationSeconds(0);
 
+    logCallEvent('call-request', {
+      toUserId: String(currentGroupRecipientUserId),
+      chatGroupId: selectedGroupId,
+    });
+
     callSocketRef.current.emit('call-request', {
       toUserId: String(currentGroupRecipientUserId),
       chatGroupId: selectedGroupId,
     });
   };
+
+  useEffect(() => {
+    if (callState.phase !== 'connecting' || !callState.callId) {
+      if (connectingTimeoutRef.current) {
+        clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
+      return undefined;
+    }
+
+    if (connectingTimeoutRef.current) {
+      clearTimeout(connectingTimeoutRef.current);
+    }
+
+    connectingTimeoutRef.current = setTimeout(() => {
+      const activeCall = activeCallStateRef.current;
+
+      if (activeCall.phase !== 'connecting' || !activeCall.callId) {
+        return;
+      }
+
+      logCallEvent('connecting-timeout', { callId: activeCall.callId });
+      alert('Call could not connect. Please try again.');
+      emitCallEndAndClose('timeout');
+    }, 30000);
+
+    return () => {
+      if (connectingTimeoutRef.current) {
+        clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
+    };
+  }, [callState.callId, callState.phase, emitCallEndAndClose]);
 
   useEffect(() => {
     if (callState.phase !== 'active') {
@@ -664,6 +766,7 @@ export default function ChatApp({
     });
 
     socket.on('outgoing-ringing', (payload = {}) => {
+      logCallEvent('outgoing-ringing', payload);
       setCallState((previous) => ({
         ...previous,
         isVisible: true,
@@ -673,16 +776,19 @@ export default function ChatApp({
     });
 
     socket.on('call-unavailable', (payload = {}) => {
+      logCallEvent('call-unavailable', payload);
       alert(payload.message || 'Recipient is currently unavailable for calls.');
       closeCallScreen();
     });
 
     socket.on('call-error', (payload = {}) => {
+      logCallEvent('call-error', payload);
       alert(payload.message || 'Failed to start call.');
       closeCallScreen();
     });
 
     socket.on('incoming-call', (payload = {}) => {
+      logCallEvent('incoming-call', payload);
       const activeCall = activeCallStateRef.current;
 
       if (activeCall.isVisible && activeCall.callId) {
@@ -708,6 +814,7 @@ export default function ChatApp({
     });
 
     socket.on('call-accepted', async (payload = {}) => {
+      logCallEvent('call-accepted', payload);
       const peerUserId =
         String(payload.fromUserId) === String(currentUserId)
           ? String(payload.toUserId)
@@ -740,6 +847,11 @@ export default function ChatApp({
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
 
+          logCallEvent('offer:send', {
+            callId: payload.callId,
+            toUserId: peerUserId,
+          });
+
           socket.emit('offer', {
             callId: payload.callId,
             toUserId: peerUserId,
@@ -754,6 +866,7 @@ export default function ChatApp({
 
     socket.on('offer', async (payload = {}) => {
       const { callId, fromUserId, sdp } = payload;
+      logCallEvent('offer:receive', { callId, fromUserId });
       const activeCall = activeCallStateRef.current;
 
       if (activeCall.callId && String(activeCall.callId) !== String(callId)) {
@@ -791,6 +904,11 @@ export default function ChatApp({
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
 
+        logCallEvent('answer:send', {
+          callId,
+          toUserId: fromUserId,
+        });
+
         socket.emit('answer', {
           callId,
           toUserId: fromUserId,
@@ -803,6 +921,7 @@ export default function ChatApp({
 
     socket.on('answer', async (payload = {}) => {
       const { callId, sdp } = payload;
+      logCallEvent('answer:receive', { callId });
       const peerConnection = peerConnectionRef.current;
       const activeCall = activeCallStateRef.current;
 
@@ -830,6 +949,10 @@ export default function ChatApp({
 
     socket.on('ice-candidate', async (payload = {}) => {
       const { callId, candidate } = payload;
+      logCallEvent('ice-candidate:receive', {
+        callId,
+        candidateType: candidate?.type,
+      });
       const peerConnection = peerConnectionRef.current;
       const activeCall = activeCallStateRef.current;
 
@@ -856,11 +979,13 @@ export default function ChatApp({
     });
 
     socket.on('call-declined', () => {
+      logCallEvent('call-declined');
       alert('Call was declined.');
       closeCallScreen();
     });
 
     socket.on('call-ended', () => {
+      logCallEvent('call-ended');
       closeCallScreen();
     });
 
