@@ -176,6 +176,27 @@ export default function EventsPage() {
     });
   };
 
+  // Convert an ISO date string to the "YYYY-MM-DDTHH:mm" format required by
+  // <input type="datetime-local">. Returns an empty string for falsy values.
+  const toDatetimeLocal = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    // toISOString gives "YYYY-MM-DDTHH:mm:ss.sssZ"; we need only the first 16 chars
+    const pad = (n) => String(n).padStart(2, '0');
+    return (
+      date.getFullYear() +
+      '-' +
+      pad(date.getMonth() + 1) +
+      '-' +
+      pad(date.getDate()) +
+      'T' +
+      pad(date.getHours()) +
+      ':' +
+      pad(date.getMinutes())
+    );
+  };
+
   const handleEdit = (event) => {
     setCurrentEditedId(event._id);
     setOpenAddEventDialog(true);
@@ -184,8 +205,8 @@ export default function EventsPage() {
       title: event.title,
       description: event.description,
       beachId: event.beachId?._id || event.beachId,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      startDate: toDatetimeLocal(event.startDate),
+      endDate: toDatetimeLocal(event.endDate),
       maxVolunteers: event.maxVolunteers,
       tags: event.tags?.join(', ') || '',
     };
