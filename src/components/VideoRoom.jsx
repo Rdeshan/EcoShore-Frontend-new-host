@@ -56,13 +56,61 @@ const shouldInitiateOffer = (localUserId, remoteUserId) => {
 
 function StreamTile({ label, stream, muted = false }) {
   const videoRef = useRef(null);
+  const [needsUserGesture, setNeedsUserGesture] = useState(false);
+  const [forcedMuted, setForcedMuted] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    const video = videoRef.current;
+
+    if (!video || !stream) {
+      return;
     }
-  }, [stream]);
+
+    setNeedsUserGesture(false);
+    setForcedMuted(false);
+    video.srcObject = stream;
+
+    const attemptPlay = async (allowMuteFallback) => {
+      try {
+        await video.play();
+        setNeedsUserGesture(false);
+      } catch {
+        if (allowMuteFallback && !video.muted) {
+          setForcedMuted(true);
+          video.muted = true;
+
+          try {
+            await video.play();
+          } catch {
+            // Ignore repeated autoplay failures.
+          }
+        }
+
+        setNeedsUserGesture(true);
+      }
+    };
+
+    video.muted = Boolean(muted);
+    attemptPlay(true);
+  }, [muted, stream]);
+
+  const handleEnablePlayback = async () => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    setForcedMuted(false);
+    video.muted = Boolean(muted);
+
+    try {
+      await video.play();
+      setNeedsUserGesture(false);
+    } catch {
+      setNeedsUserGesture(true);
+    }
+  };
 
   return (
     <div className="relative overflow-hidden rounded-xl border bg-black/95">
@@ -70,12 +118,21 @@ function StreamTile({ label, stream, muted = false }) {
         ref={videoRef}
         autoPlay
         playsInline
-        muted={muted}
+        muted={Boolean(muted || forcedMuted)}
         className="h-52 w-full object-cover sm:h-64"
       />
       <div className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-1 text-xs text-white">
         {label}
       </div>
+      {needsUserGesture && !muted && (
+        <button
+          type="button"
+          onClick={handleEnablePlayback}
+          className="absolute inset-x-4 bottom-4 rounded-full bg-white/90 px-3 py-2 text-xs font-semibold text-slate-900 shadow"
+        >
+          Tap to enable audio
+        </button>
+      )}
     </div>
   );
 }
