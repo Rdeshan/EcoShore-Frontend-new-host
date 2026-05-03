@@ -461,7 +461,10 @@ export default function VideoRoom({
           }
 
           const remoteUserId = String(fromUserId);
-          logMeetingEvent('offer:receive', { meetingId, fromUserId: remoteUserId });
+          logMeetingEvent('offer:receive', {
+            meetingId,
+            fromUserId: remoteUserId,
+          });
           const peerConnection = createPeerConnection(remoteUserId);
 
           if (!peerConnection) {
@@ -503,7 +506,10 @@ export default function VideoRoom({
           }
 
           const remoteUserId = String(fromUserId);
-          logMeetingEvent('answer:receive', { meetingId, fromUserId: remoteUserId });
+          logMeetingEvent('answer:receive', {
+            meetingId,
+            fromUserId: remoteUserId,
+          });
           const peerConnection = createPeerConnection(remoteUserId);
 
           if (!peerConnection) {
