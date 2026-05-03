@@ -20,7 +20,9 @@ function EventCard({ event, onDelete, onEdit, onJoin, onLeave, isLoading }) {
   const { user } = useSelector((state) => state.auth);
   const [isAssignAgentModalOpen, setIsAssignAgentModalOpen] = useState(false);
 
-  const isJoinedVolunteer = event.volunteers?.includes(user?._id);
+  const isJoinedVolunteer = event.volunteers?.some(
+    (v) => (v?._id || v) === user?._id
+  );
   const volunteerCount = event.volunteers?.length || 0;
   const isFull = volunteerCount >= event.maxVolunteers;
 
