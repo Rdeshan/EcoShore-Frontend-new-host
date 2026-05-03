@@ -42,7 +42,10 @@ function App() {
             {/* Admin only - Register new agent */}
             <Route element={<PrivateRoute allowedRoles={['admin']} />}>
               <Route path="/agent-form" element={<AgentRegister />} />
-              <Route path="/waste-records-list" element={<WasteRecordsList />} />
+              <Route
+                path="/waste-records-list"
+                element={<WasteRecordsList />}
+              />
             </Route>
 
             {/* Protected routes under Layout for all authenticated roles */}

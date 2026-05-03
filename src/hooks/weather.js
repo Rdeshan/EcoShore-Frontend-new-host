@@ -11,7 +11,11 @@ import {
  * @param {number} longitude
  * @param {string} beachName - for cache key
  */
-export const useWeatherByCoordinates = (latitude, longitude, beachName = 'beach') => {
+export const useWeatherByCoordinates = (
+  latitude,
+  longitude,
+  beachName = 'beach'
+) => {
   return useQuery({
     queryKey: ['weather', beachName, latitude, longitude],
     queryFn: async () => {

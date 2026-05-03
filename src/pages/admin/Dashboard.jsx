@@ -47,24 +47,20 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex bg-secondary/30 p-1 rounded-2xl border border-border">
-          {[
-            'events',
-            'organizers',
-            'beaches',
-            'users',
-            'analytics',
-          ].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {tab
-                .split('-')
-                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(' ')}
-            </button>
-          ))}
+          {['events', 'organizers', 'beaches', 'users', 'analytics'].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {tab
+                  .split('-')
+                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                  .join(' ')}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -286,7 +282,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

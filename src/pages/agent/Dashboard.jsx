@@ -70,7 +70,9 @@ export default function AgentDashboard() {
                 Upcoming Events
                 <Calendar className="w-4 h-4" />
               </CardTitle>
-              <div className="text-4xl font-bold mt-2">{upcomingEventsCount}</div>
+              <div className="text-4xl font-bold mt-2">
+                {upcomingEventsCount}
+              </div>
             </CardHeader>
           </Card>
 
@@ -91,7 +93,9 @@ export default function AgentDashboard() {
                 <MapPin className="w-4 h-4" />
               </CardTitle>
               <div className="text-xl font-bold mt-2 truncate">
-                {user?.assignedBeach?.name || user?.assignedBeach || 'Not Assigned'}
+                {user?.assignedBeach?.name ||
+                  user?.assignedBeach ||
+                  'Not Assigned'}
               </div>
             </CardHeader>
           </Card>
@@ -189,7 +193,10 @@ export default function AgentDashboard() {
                       </thead>
                       <tbody>
                         {wasteSubmissions.map((record) => (
-                          <tr key={record.id} className="border-t border-border">
+                          <tr
+                            key={record.id}
+                            className="border-t border-border"
+                          >
                             <td className="px-4 py-3">
                               {new Date(
                                 record.createdAt || record.collectionDate

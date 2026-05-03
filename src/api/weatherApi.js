@@ -5,39 +5,44 @@ const WEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
 // Beach name mapping to OpenWeatherMap recognized cities
 const BEACH_NAME_MAPPING = {
-  'unawatuna': 'Unawatuna, LK',
-  'unawattuna': 'Unawatuna, LK',
-  'mirissa': 'Mirissa, LK',
-  'hikkaduwa': 'Hikkaduwa, LK',
-  'weligama': 'Weligama, LK',
-  'bentota': 'Bentota, LK',
-  'bentotas': 'Bentota, LK',
-  'negombo': 'Negombo, LK',
-  'beruwala': 'Beruwala, LK',
-  'colombo': 'Colombo, LK',
-  'galle': 'Galle, LK',
-  'matara': 'Matara, LK',
-  'trincomalee': 'Trincomalee, LK',
-  'arugambe': 'Arugambe, LK',
-  'batticaloa': 'Batticaloa, LK',
+  unawatuna: 'Unawatuna, LK',
+  unawattuna: 'Unawatuna, LK',
+  mirissa: 'Mirissa, LK',
+  hikkaduwa: 'Hikkaduwa, LK',
+  weligama: 'Weligama, LK',
+  bentota: 'Bentota, LK',
+  bentotas: 'Bentota, LK',
+  negombo: 'Negombo, LK',
+  beruwala: 'Beruwala, LK',
+  colombo: 'Colombo, LK',
+  galle: 'Galle, LK',
+  matara: 'Matara, LK',
+  trincomalee: 'Trincomalee, LK',
+  arugambe: 'Arugambe, LK',
+  batticaloa: 'Batticaloa, LK',
   'mount lavinia': 'Mount Lavinia, LK',
-  'wellawatta': 'Wellawatta, LK',
-  'dehiwala': 'Dehiwala, LK',
-  'moratuwa': 'Moratuwa, LK',
-  'kalutara': 'Kalutara, LK',
+  wellawatta: 'Wellawatta, LK',
+  dehiwala: 'Dehiwala, LK',
+  moratuwa: 'Moratuwa, LK',
+  kalutara: 'Kalutara, LK',
 };
 
 // Get the proper beach name for OpenWeatherMap API
 const getProperBeachName = (beachName) => {
   if (!beachName) return null;
   const normalized = beachName.toLowerCase().trim();
-  
+
   // First try exact match in mapping
   if (BEACH_NAME_MAPPING[normalized]) {
-    console.log('✓ Found exact mapping for:', beachName, '->', BEACH_NAME_MAPPING[normalized]);
+    console.log(
+      '✓ Found exact mapping for:',
+      beachName,
+      '->',
+      BEACH_NAME_MAPPING[normalized]
+    );
     return BEACH_NAME_MAPPING[normalized];
   }
-  
+
   // Try partial match
   for (const [key, value] of Object.entries(BEACH_NAME_MAPPING)) {
     if (normalized.includes(key) || key.includes(normalized)) {
@@ -45,9 +50,13 @@ const getProperBeachName = (beachName) => {
       return value;
     }
   }
-  
+
   // If no mapping found, append Sri Lanka (LK) as fallback
-  console.log('⚠️ No mapping found for:', beachName, '- using as is with LK suffix');
+  console.log(
+    '⚠️ No mapping found for:',
+    beachName,
+    '- using as is with LK suffix'
+  );
   return `${beachName}, LK`;
 };
 
@@ -105,10 +114,15 @@ export const getWeatherByCity = async (cityName) => {
       console.warn('City name is empty');
       return null;
     }
-    
+
     const properCityName = getProperBeachName(cityName);
-    console.log('📍 Fetching weather for:', cityName, '-> mapped to:', properCityName);
-    
+    console.log(
+      '📍 Fetching weather for:',
+      cityName,
+      '-> mapped to:',
+      properCityName
+    );
+
     const response = await axios.get(WEATHER_API_BASE, {
       params: {
         q: properCityName,
@@ -116,7 +130,12 @@ export const getWeatherByCity = async (cityName) => {
         units: 'metric', // Use Celsius
       },
     });
-    console.log('✓ Weather API response for', properCityName, ':', response.data);
+    console.log(
+      '✓ Weather API response for',
+      properCityName,
+      ':',
+      response.data
+    );
     return response.data;
   } catch (error) {
     console.error('❌ Weather API Error for', cityName, ':', {
