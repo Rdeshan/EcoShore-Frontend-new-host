@@ -34,6 +34,16 @@ const buildRtcConfig = () => {
 
 const rtcConfig = buildRtcConfig();
 
+const shouldLogCalls =
+  import.meta.env.VITE_CALL_LOGS === 'true' || import.meta.env.DEV;
+const logMeetingEvent = (event, details = {}) => {
+  if (!shouldLogCalls) {
+    return;
+  }
+
+  console.info('[meeting]', event, details);
+};
+
 const getSocketServerUrl = () => {
   const apiBaseUrl =
     import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -88,6 +98,7 @@ export default function VideoRoom({
   const localStreamRef = useRef(null);
   const socketRef = useRef(null);
   const peerConnectionsRef = useRef({});
+  const pendingIceCandidatesRef = useRef({});
   const participantsRef = useRef([]);
   const onLeaveRef = useRef(onLeave);
   const onMeetingStateChangeRef = useRef(onMeetingStateChange);
@@ -148,10 +159,50 @@ export default function VideoRoom({
         return nextStreams;
       });
 
+      if (pendingIceCandidatesRef.current[remoteUserId]) {
+        delete pendingIceCandidatesRef.current[remoteUserId];
+      }
+
       syncMeetingState(participantsRef.current);
     },
     [syncMeetingState]
   );
+
+  const queueIceCandidate = useCallback((remoteUserId, candidate) => {
+    if (!remoteUserId || !candidate) {
+      return;
+    }
+
+    if (!pendingIceCandidatesRef.current[remoteUserId]) {
+      pendingIceCandidatesRef.current[remoteUserId] = [];
+    }
+
+    pendingIceCandidatesRef.current[remoteUserId].push(candidate);
+  }, []);
+
+  const flushPendingIceCandidates = useCallback(async (remoteUserId) => {
+    const peerConnection = peerConnectionsRef.current[remoteUserId];
+
+    if (!peerConnection || !peerConnection.remoteDescription) {
+      return;
+    }
+
+    const pendingCandidates = pendingIceCandidatesRef.current[remoteUserId];
+
+    if (!pendingCandidates || pendingCandidates.length === 0) {
+      return;
+    }
+
+    pendingIceCandidatesRef.current[remoteUserId] = [];
+
+    for (const candidate of pendingCandidates) {
+      try {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch {
+        // Ignore stale or invalid ICE candidates.
+      }
+    }
+  }, []);
 
   const createPeerConnection = useCallback(
     (remoteUserId) => {
@@ -176,6 +227,12 @@ export default function VideoRoom({
           return;
         }
 
+        logMeetingEvent('ice-candidate:send', {
+          meetingId,
+          toUserId: remoteUserId,
+          candidateType: event.candidate.type,
+        });
+
         socketRef.current.emit('ice-candidate', {
           meetingId,
           toUserId: remoteUserId,
@@ -190,6 +247,8 @@ export default function VideoRoom({
           return;
         }
 
+        logMeetingEvent('track', { meetingId, remoteUserId });
+
         setRemoteStreams((previousStreams) => ({
           ...previousStreams,
           [remoteUserId]: stream,
@@ -197,12 +256,34 @@ export default function VideoRoom({
       };
 
       peerConnection.onconnectionstatechange = () => {
+        logMeetingEvent('connection-state', {
+          meetingId,
+          remoteUserId,
+          connectionState: peerConnection.connectionState,
+        });
+
         if (
           peerConnection.connectionState === 'failed' ||
           peerConnection.connectionState === 'closed'
         ) {
           removePeerConnection(remoteUserId);
         }
+      };
+
+      peerConnection.oniceconnectionstatechange = () => {
+        logMeetingEvent('ice-connection-state', {
+          meetingId,
+          remoteUserId,
+          iceConnectionState: peerConnection.iceConnectionState,
+        });
+      };
+
+      peerConnection.onsignalingstatechange = () => {
+        logMeetingEvent('signaling-state', {
+          meetingId,
+          remoteUserId,
+          signalingState: peerConnection.signalingState,
+        });
       };
 
       peerConnectionsRef.current[remoteUserId] = peerConnection;
@@ -227,6 +308,8 @@ export default function VideoRoom({
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
+
+      logMeetingEvent('offer:send', { meetingId, toUserId: remoteUserId });
 
       socketRef.current?.emit('offer', {
         meetingId,
@@ -378,6 +461,7 @@ export default function VideoRoom({
           }
 
           const remoteUserId = String(fromUserId);
+          logMeetingEvent('offer:receive', { meetingId, fromUserId: remoteUserId });
           const peerConnection = createPeerConnection(remoteUserId);
 
           if (!peerConnection) {
@@ -393,8 +477,15 @@ export default function VideoRoom({
               new RTCSessionDescription(sdp)
             );
 
+            await flushPendingIceCandidates(remoteUserId);
+
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
+
+            logMeetingEvent('answer:send', {
+              meetingId,
+              toUserId: remoteUserId,
+            });
 
             socket.emit('answer', {
               meetingId,
@@ -412,6 +503,7 @@ export default function VideoRoom({
           }
 
           const remoteUserId = String(fromUserId);
+          logMeetingEvent('answer:receive', { meetingId, fromUserId: remoteUserId });
           const peerConnection = createPeerConnection(remoteUserId);
 
           if (!peerConnection) {
@@ -422,6 +514,8 @@ export default function VideoRoom({
             await peerConnection.setRemoteDescription(
               new RTCSessionDescription(sdp)
             );
+
+            await flushPendingIceCandidates(remoteUserId);
           } catch (error) {
             toast.error('Failed to finalize peer connection answer.');
           }
@@ -439,9 +533,19 @@ export default function VideoRoom({
             }
 
             const remoteUserId = String(fromUserId);
+            logMeetingEvent('ice-candidate:receive', {
+              meetingId,
+              fromUserId: remoteUserId,
+              candidateType: candidate.type,
+            });
             const peerConnection = createPeerConnection(remoteUserId);
 
             if (!peerConnection) {
+              return;
+            }
+
+            if (!peerConnection.remoteDescription) {
+              queueIceCandidate(remoteUserId, candidate);
               return;
             }
 
@@ -494,8 +598,10 @@ export default function VideoRoom({
     createPeerConnection,
     currentUserId,
     disconnectAndCleanup,
+    flushPendingIceCandidates,
     meetingId,
     onLeave,
+    queueIceCandidate,
     removePeerConnection,
     syncMeetingState,
   ]);
